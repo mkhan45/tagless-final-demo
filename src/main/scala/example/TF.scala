@@ -6,20 +6,20 @@ object TF {
   // through types. For example, halt is the only operation
   // which returns an Int, so we use it last unless we are
   // running a program for side effects.
-  trait Algebra[E[_]] {
+  trait Algebra[F[_]] {
     var map: Map[String, Int] = Map()
 
-    def lit(n: String, x: Int): E[Unit]
-    def prim(n: String, prim: (Int, Int) => Int, lhs: String, rhs: String): E[Unit]
-    def print(n: String): E[Unit]
-    def halt(n: String): E[Int]
+    def lit(n: String, x: Int): F[Unit]
+    def prim(n: String, prim: (Int, Int) => Int, lhs: String, rhs: String): F[Unit]
+    def print(n: String): F[Unit]
+    def halt(n: String): F[Int]
   }
 
   // Defining an interpreter for the Algebra, we could
   // easily write a different one with e.g. a different
   // implementation of print which works for testing.
   case class Expr[A](res: A)
-  implicit object CPSInterpreter extends Algebra[Expr] {
+  class CPSInterpreter extends Algebra[Expr] {
     override def lit(n: String, x: Int): Expr[Unit] = {
       map = map + (n -> x)
       Expr(())
@@ -40,6 +40,17 @@ object TF {
     }
   }
 
+  // This interpreter, instead of printing to stdout,
+  // adds it to a log, which can be better for testing
+  class TestCPSInterpreter extends CPSInterpreter {
+    var log: Vector[String] = Vector()
+
+    override def print(n: String): Expr[Unit] = {
+      log = log :+ s"${n}: ${map(n)}"
+      Expr(())
+    }
+  }
+
   // Finally, we define a program that runs the interpreter.
   // Ideally we would add an effect constraint to F, but the
   // flexibility of tagless final is that we can easily choose
@@ -55,7 +66,13 @@ object TF {
   }
 
   def res1: Int = {
-    val Expr(res) = prog1[Expr]
+    val Expr(res) = prog1[Expr](new CPSInterpreter)
     res
+  }
+
+  def res2: (Int, Vector[String]) = {
+    val it = new TestCPSInterpreter
+    val Expr(res) = prog1[Expr](it)
+    (res, it.log)
   }
 }

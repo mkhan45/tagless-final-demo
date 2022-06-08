@@ -7,4 +7,8 @@ class TFSpec extends AnyFlatSpec with Matchers {
   "The first result" should "equal 25" in {
     TF.res1 shouldEqual 25
   }
+
+  "The log" should "log stuff?" in {
+    TF.res2 shouldEqual (25, Vector("res2: 125"))
+  }
 }
