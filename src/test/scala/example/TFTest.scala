@@ -9,6 +9,6 @@ class TFSpec extends AnyFlatSpec with Matchers {
   }
 
   "The log" should "log stuff?" in {
-    TF.res2 shouldEqual (25, Vector("res2: 125"))
+    TF.res2 shouldEqual (25, Vector("res2: 125", "res: 25"))
   }
 }
