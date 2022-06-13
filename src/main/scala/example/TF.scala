@@ -6,13 +6,13 @@ object TF {
   // through types. For example, halt is the only operation
   // which returns an Int, so we use it last unless we are
   // running a program for side effects.
-  trait Algebra[F[_]] {
+  trait Algebra[F[_], A] {
     var env: Map[String, Int] = Map()
 
     def lit(n: String, x: Int): F[Unit]
     def prim(n: String, prim: (Int, Int) => Int, lhs: String, rhs: String): F[Unit]
     def print(n: String): F[Unit]
-    def halt(n: String): F[Int]
+    def halt(n: String): F[A]
 
     // contrived derived method
     def print_and_halt(n: String) = {
@@ -25,7 +25,7 @@ object TF {
   // easily write a different one with e.g. a different
   // implementation of print which works for testing.
   case class Expr[A](res: A)
-  class CPSInterpreter extends Algebra[Expr] {
+  class CPSInterpreter extends Algebra[Expr, Int] {
     override def lit(n: String, x: Int): Expr[Unit] = {
       env = env + (n -> x)
       Expr(())
@@ -62,7 +62,7 @@ object TF {
   // flexibility of tagless final is that we can easily choose
   // what effect/handler to use.
   
-  def prog1[F[_]]: Algebra[F] ?=> F[Int] = (interpreter: Algebra[F]) ?=> {
+  def prog1[F[_]](implicit interpreter: Algebra[F, Int]): F[Int] = {
 
     // c5 <- 5
     // res <- c5 * c5
@@ -77,7 +77,7 @@ object TF {
   }
 
   def res1: Int = {
-    given Algebra[Expr] = new CPSInterpreter
+    given Algebra[Expr, Int] = new CPSInterpreter
     val Expr(res) = prog1[Expr]
     res
   }
